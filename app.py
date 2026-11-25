@@ -104,11 +104,13 @@ if st.button("Prediksi Pendapatan", type="primary"):
         "Native Country": native_country
     }])
 
-    prediksi = model.predict(input_data)
-    probabilitas = model.predict_proba(input_data)
+    hasil_pred = int(model.predict(input_data).item(0))
+    prob_array = model.predict_proba(input_data)
+    prob_persen = float(prob_array.max()) * 100
 
     st.divider()
-    if prediksi == 1:
-        st.success(f"### Hasil Prediksi: Pendapatan **>50K** (Probabilitas: {probabilitas*100:.2f}%)")
+    if hasil_pred == 1:
+        st.success(f"### Hasil Prediksi: Pendapatan **>50K** (Probabilitas: {prob_persen:.2f}%)")
     else:
-        st.info(f"### Hasil Prediksi: Pendapatan **<=50K** (Probabilitas: {probabilitas*100:.2f}%)")
+        st.info(f"### Hasil Prediksi: Pendapatan **<=50K** (Probabilitas: {prob_persen:.2f}%)")
+
