@@ -1,6 +1,11 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import numpy as np
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
 
 st.set_page_config(page_title="Prediksi Kategori Pendapatan", page_icon="💼")
 
@@ -8,10 +13,41 @@ st.title("💼 Prediksi Kategori Pendapatan (Income)")
 st.write("Aplikasi klasifikasi Machine Learning (**Random Forest**) untuk memprediksi kategori pendapatan **<=50K** atau **>50K**.")
 
 @st.cache_resource
-def load_model():
-    return joblib.load("best_income_pipeline.joblib")
+def train_model():
+    df = pd.read_csv("adult.csv", skipinitialspace=True)
+    df.replace("?", np.nan, inplace=True)
+    df = df.drop_duplicates().reset_index(drop=True)
+    if "Education" in df.columns:
+        df.drop(columns=["Education"], inplace=True)
 
-model = load_model()
+    X = df.drop(columns=["Income"])
+    y = df["Income"].map({"<=50K": 0, ">50K": 1})
+
+    numeric_features = X.select_dtypes(include=np.number).columns.tolist()
+    categorical_features = X.select_dtypes(exclude=np.number).columns.tolist()
+
+    preprocessor = ColumnTransformer(transformers=[
+        ("num", Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler())
+        ]), numeric_features),
+        ("cat", Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore"))
+        ]), categorical_features)
+    ])
+
+    model = Pipeline([
+        ("preprocessor", preprocessor),
+        ("classifier", RandomForestClassifier(
+            n_estimators=50, max_depth=15, class_weight="balanced", random_state=42, n_jobs=-1
+        ))
+    ])
+    model.fit(X, y)
+    return model
+
+with st.spinner("Menyiapkan model Random Forest..."):
+    model = train_model()
 
 st.subheader("Masukkan Data Individu")
 col1, col2 = st.columns(2)
