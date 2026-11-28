@@ -2,182 +2,378 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 
-# ================= CONFIG =================
+
+# ==================================================
+# CONFIGURATION
+# ==================================================
+
 st.set_page_config(
-    page_title="Income Prediction",
-    page_icon="💼",
-    layout="wide"
+    page_title="INCOME AI | Smart Prediction",
+    page_icon="💎",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# ================= STYLE =================
+
+# ==================================================
+# PREMIUM UI DESIGN
+# ==================================================
+
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
 .stApp {
-    background: #f5f7fb;
+    background:
+        radial-gradient(circle at 5% 5%, rgba(67,97,238,.08), transparent 25%),
+        radial-gradient(circle at 95% 20%, rgba(126,87,255,.07), transparent 25%),
+        #f4f6fc;
 }
 
 .main .block-container {
-    max-width: 1180px;
-    padding: 1rem 1.5rem 2rem;
-}
-
-header[data-testid="stHeader"] {
-    background: transparent;
+    max-width: 1250px;
+    padding: 1.5rem 2rem 3rem;
 }
 
 #MainMenu, footer {
     visibility: hidden;
 }
 
+header[data-testid="stHeader"] {
+    background: transparent;
+}
+
+/* HERO */
+
 .hero {
-    background: linear-gradient(110deg, #142c4d, #2469a5);
-    padding: 22px 30px;
-    border-radius: 15px;
-    color: white;
-    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+    padding: 32px 36px;
+    border-radius: 22px;
+    background: linear-gradient(115deg, #101b36 0%, #183b70 55%, #4935a5 100%);
+    box-shadow: 0 14px 35px rgba(28,43,91,.16);
+    margin-bottom: 20px;
+}
+
+.hero:before {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.07);
+    right: 7%;
+    top: -160px;
+}
+
+.hero:after {
+    content: "";
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    border: 35px solid rgba(255,255,255,.055);
+    right: -35px;
+    bottom: -120px;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 7px 13px;
+    border-radius: 30px;
+    background: rgba(255,255,255,.13);
+    color: #d9e7ff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
 }
 
 .hero h1 {
-    color: white;
-    font-size: 27px;
-    margin: 0 0 7px 0;
+    color: #ffffff !important;
+    font-size: 35px;
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    margin: 15px 0 7px;
 }
 
 .hero p {
-    color: #e1edfa;
+    color: #d3def4 !important;
     font-size: 13px;
+    line-height: 1.7;
     margin: 0;
+    max-width: 650px;
 }
 
-.section-title {
+/* TOP METRICS */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 13px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: rgba(255,255,255,.9);
+    border: 1px solid #e7eaf3;
+    padding: 15px 18px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(30,45,80,.035);
+}
+
+.stat-label {
+    color: #8792a7;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.stat-value {
+    color: #182c4c;
+    font-size: 19px;
+    font-weight: 800;
+    margin-top: 5px;
+}
+
+.stat-icon {
+    float: right;
     font-size: 20px;
-    font-weight: 750;
-    color: #193453;
-    margin: 12px 0 2px;
 }
 
-.section-desc {
-    color: #75849a;
+/* SECTION */
+
+.section-heading {
+    color: #172b4d;
+    font-size: 21px;
+    font-weight: 800;
+    margin: 5px 0 3px;
+}
+
+.section-subtitle {
+    color: #8490a4;
     font-size: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 15px;
 }
 
-.card-title {
-    background: white;
-    padding: 12px 14px;
-    border: 1px solid #e1e8f0;
-    border-radius: 10px;
-    color: #1c4269;
-    font-weight: 700;
+/* INPUT CARDS */
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #ffffff;
+    border: 1px solid #e6eaf2;
+    border-radius: 17px;
+    box-shadow: 0 5px 20px rgba(30,45,80,.045);
+    padding: 13px 15px;
+}
+
+.card-heading {
+    color: #263c61;
     font-size: 14px;
-    margin-bottom: 10px;
+    font-weight: 800;
+    margin-bottom: 3px;
 }
 
-div[data-testid="stVerticalBlock"] {
-    gap: 0.45rem;
+.card-description {
+    color: #95a0b2;
+    font-size: 10px;
+    margin-bottom: 13px;
 }
 
 div[data-testid="stWidgetLabel"] p {
-    font-size: 12px;
+    color: #44536b;
+    font-size: 11px;
     font-weight: 600;
-    color: #34465e;
 }
 
 div[data-baseweb="select"] > div {
-    border-radius: 8px;
+    border-radius: 9px;
+    border-color: #e0e5ef;
+    background: #fbfcff;
 }
 
 div[data-testid="stNumberInput"] input {
-    border-radius: 8px;
+    border-radius: 9px;
+    background: #fbfcff;
 }
 
 div[data-testid="stFormSubmitButton"] button {
-    background: #1769ad;
+    background: linear-gradient(100deg, #315eea, #7049dc);
     color: white;
     border: none;
-    border-radius: 9px;
-    height: 46px;
-    font-weight: 700;
-    font-size: 14px;
+    height: 49px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    box-shadow: 0 7px 17px rgba(75,82,205,.22);
+    transition: all .2s ease;
 }
 
 div[data-testid="stFormSubmitButton"] button:hover {
-    background: #104c80;
+    background: linear-gradient(100deg, #234bc8, #5836be);
     color: white;
+    transform: translateY(-2px);
 }
+
+/* RESULT */
 
 .result-card {
-    background: linear-gradient(120deg, #142c4d, #2469a5);
+    background: linear-gradient(115deg, #101c38, #234a83 65%, #5140a4);
+    padding: 28px;
+    border-radius: 20px;
     color: white;
-    padding: 22px;
-    border-radius: 14px;
     text-align: center;
-    margin: 12px 0;
+    box-shadow: 0 12px 30px rgba(30,48,100,.14);
+    margin: 12px 0 18px;
 }
 
-.result-card h2 {
-    color: white;
-    margin: 7px 0;
+.result-label {
+    color: #b7cbf7;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.result-category {
+    color: #ffffff;
+    font-size: 34px;
+    font-weight: 900;
+    margin: 10px 0;
+}
+
+.result-confidence {
+    color: #ffffff;
     font-size: 27px;
+    font-weight: 800;
 }
 
-.result-card p {
-    color: #e1edfa;
-    font-size: 13px;
+.result-caption {
+    color: #d1ddf5;
+    font-size: 11px;
 }
 
-.metric {
+.prob-card {
     background: white;
-    border: 1px solid #e1e8f0;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 8px;
+    border: 1px solid #e6eaf2;
+    border-radius: 15px;
+    padding: 17px;
 }
 
-.metric-label {
-    color: #75849a;
-    font-size: 12px;
+.prob-label {
+    color: #7f8ca2;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-.metric-value {
-    color: #193453;
-    font-size: 22px;
-    font-weight: 750;
+.prob-value {
+    color: #20375b;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 5px 0 10px;
+}
+
+.bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #edf0f7;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 8px;
+    border-radius: 20px;
+    background: linear-gradient(90deg, #3969ee, #8756e8);
 }
 
 .footer {
     text-align: center;
-    color: #8492a6;
-    font-size: 11px;
-    border-top: 1px solid #e1e8f0;
-    padding-top: 15px;
-    margin-top: 25px;
+    padding-top: 22px;
+    margin-top: 35px;
+    border-top: 1px solid #e3e8f1;
+    color: #8995a9;
+    font-size: 10px;
+}
+
+@media (max-width: 700px) {
+    .main .block-container {
+        padding: 1rem;
+    }
+
+    .hero {
+        padding: 24px;
+    }
+
+    .hero h1 {
+        font-size: 26px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ================= HEADER =================
+# ==================================================
+# HEADER
+# ==================================================
+
 st.markdown("""
 <div class="hero">
-    <h1>💼 Income Prediction System</h1>
-    <p>
-        Prediksi kategori pendapatan individu menggunakan
-        Machine Learning dengan algoritma Random Forest.
-    </p>
+    <div class="hero-content">
+        <span class="hero-badge">✦ ARTIFICIAL INTELLIGENCE • MACHINE LEARNING</span>
+        <h1>INCOME AI.</h1>
+        <p>
+            Smart Income Prediction Dashboard<br>
+            Analisis dan prediksi kategori pendapatan individu
+            menggunakan algoritma Random Forest.
+        </p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-icon">🤖</span>
+        <div class="stat-label">ALGORITHM</div>
+        <div class="stat-value">Random Forest</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon">📊</span>
+        <div class="stat-label">INPUT FEATURES</div>
+        <div class="stat-value">13 Features</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <div class="stat-label">PREDICTION TYPE</div>
+        <div class="stat-value">Binary Classification</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 
-# ================= TRAIN MODEL =================
+# ==================================================
+# MODEL
+# ==================================================
+
 @st.cache_resource
 def train_model():
+
     df = pd.read_csv("adult.csv", skipinitialspace=True)
 
     df.replace("?", np.nan, inplace=True)
@@ -221,11 +417,12 @@ def train_model():
     ])
 
     model.fit(X, y)
+
     return model
 
 
 try:
-    with st.spinner("Menyiapkan model prediksi..."):
+    with st.spinner("Memuat model AI..."):
         model = train_model()
 
 except Exception as e:
@@ -233,132 +430,160 @@ except Exception as e:
     st.stop()
 
 
-# ================= INPUT FORM =================
-st.markdown(
-    '<div class="section-title">Data Individu</div>',
-    unsafe_allow_html=True
-)
+# ==================================================
+# INPUT FORM
+# ==================================================
 
-st.markdown(
-    '<div class="section-desc">Lengkapi data berikut untuk melakukan prediksi pendapatan.</div>',
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div class="section-heading">Prediction Workspace</div>
+<div class="section-subtitle">
+    Masukkan informasi individu untuk mendapatkan hasil prediksi pendapatan.
+</div>
+""", unsafe_allow_html=True)
+
 
 with st.form("income_form"):
 
     col1, col2, col3 = st.columns(3, gap="medium")
 
-    # PERSONAL
+    # PERSONAL INFORMATION
     with col1:
-        st.markdown(
-            '<div class="card-title">👤 Personal</div>',
-            unsafe_allow_html=True
-        )
 
-        age = st.number_input(
-            "Usia", 17, 90, 35
-        )
+        with st.container(border=True):
 
-        gender = st.selectbox(
-            "Jenis Kelamin",
-            ["Male", "Female"]
-        )
+            st.markdown("""
+            <div class="card-heading">01 / Personal Profile</div>
+            <div class="card-description">Informasi karakteristik individu</div>
+            """, unsafe_allow_html=True)
 
-        race = st.selectbox(
-            "Ras",
-            ["White", "Black", "Asian-Pac-Islander",
-             "Amer-Indian-Eskimo", "Other"]
-        )
+            age = st.number_input(
+                "Usia",
+                min_value=17,
+                max_value=90,
+                value=35
+            )
 
-        marital_status = st.selectbox(
-            "Status Pernikahan",
-            ["Married-civ-spouse", "Never-married",
-             "Divorced", "Separated", "Widowed",
-             "Married-spouse-absent", "Married-AF-spouse"]
-        )
+            gender = st.selectbox(
+                "Jenis Kelamin",
+                ["Male", "Female"]
+            )
 
-        relationship = st.selectbox(
-            "Hubungan Keluarga",
-            ["Husband", "Not-in-family", "Own-child",
-             "Unmarried", "Wife", "Other-relative"]
-        )
+            race = st.selectbox(
+                "Ras",
+                ["White", "Black", "Asian-Pac-Islander",
+                 "Amer-Indian-Eskimo", "Other"]
+            )
 
-    # PEKERJAAN
+            marital_status = st.selectbox(
+                "Status Pernikahan",
+                ["Married-civ-spouse", "Never-married",
+                 "Divorced", "Separated", "Widowed",
+                 "Married-spouse-absent", "Married-AF-spouse"]
+            )
+
+            relationship = st.selectbox(
+                "Hubungan Keluarga",
+                ["Husband", "Not-in-family", "Own-child",
+                 "Unmarried", "Wife", "Other-relative"]
+            )
+
+            native_country = st.selectbox(
+                "Negara Asal",
+                ["United-States", "Mexico", "Philippines",
+                 "Germany", "Canada", "Puerto-Rico",
+                 "El-Salvador", "India", "Cuba", "England", "Other"]
+            )
+
+    # WORK INFORMATION
     with col2:
-        st.markdown(
-            '<div class="card-title">💼 Pekerjaan & Pendidikan</div>',
-            unsafe_allow_html=True
-        )
 
-        workclass = st.selectbox(
-            "Jenis Pekerjaan",
-            ["Private", "Self-emp-not-inc", "Self-emp-inc",
-             "Federal-gov", "Local-gov", "State-gov",
-             "Without-pay", "Never-worked"]
-        )
+        with st.container(border=True):
 
-        occupation = st.selectbox(
-            "Bidang Pekerjaan",
-            ["Exec-managerial", "Prof-specialty", "Craft-repair",
-             "Adm-clerical", "Sales", "Other-service",
-             "Machine-op-inspct", "Transport-moving",
-             "Handlers-cleaners", "Farming-fishing",
-             "Tech-support", "Protective-serv",
-             "Priv-house-serv", "Armed-Forces"]
-        )
+            st.markdown("""
+            <div class="card-heading">02 / Career & Education</div>
+            <div class="card-description">Informasi pekerjaan dan pendidikan</div>
+            """, unsafe_allow_html=True)
 
-        education_num = st.slider(
-            "Lama Pendidikan", 1, 16, 10
-        )
+            workclass = st.selectbox(
+                "Jenis Pekerjaan",
+                ["Private", "Self-emp-not-inc", "Self-emp-inc",
+                 "Federal-gov", "Local-gov", "State-gov",
+                 "Without-pay", "Never-worked"]
+            )
 
-        hours_per_week = st.slider(
-            "Jam Kerja per Minggu", 1, 99, 40
-        )
+            occupation = st.selectbox(
+                "Bidang Pekerjaan",
+                ["Exec-managerial", "Prof-specialty", "Craft-repair",
+                 "Adm-clerical", "Sales", "Other-service",
+                 "Machine-op-inspct", "Transport-moving",
+                 "Handlers-cleaners", "Farming-fishing",
+                 "Tech-support", "Protective-serv",
+                 "Priv-house-serv", "Armed-Forces"]
+            )
 
-        native_country = st.selectbox(
-            "Negara Asal",
-            ["United-States", "Mexico", "Philippines",
-             "Germany", "Canada", "Puerto-Rico",
-             "El-Salvador", "India", "Cuba", "England", "Other"]
-        )
+            education_num = st.slider(
+                "Lama Pendidikan",
+                min_value=1,
+                max_value=16,
+                value=10
+            )
 
-    # KEUANGAN
+            hours_per_week = st.slider(
+                "Jam Kerja per Minggu",
+                min_value=1,
+                max_value=99,
+                value=40
+            )
+
+    # FINANCIAL INFORMATION
     with col3:
-        st.markdown(
-            '<div class="card-title">💰 Informasi Keuangan</div>',
-            unsafe_allow_html=True
-        )
 
-        fnlwgt = st.number_input(
-            "Final Weight",
-            10000, 1500000, 180000
-        )
+        with st.container(border=True):
 
-        capital_gain = st.number_input(
-            "Capital Gain",
-            0, 100000, 0
-        )
+            st.markdown("""
+            <div class="card-heading">03 / Financial Profile</div>
+            <div class="card-description">Informasi kondisi keuangan</div>
+            """, unsafe_allow_html=True)
 
-        capital_loss = st.number_input(
-            "Capital Loss",
-            0, 10000, 0
-        )
+            fnlwgt = st.number_input(
+                "Final Weight",
+                min_value=10000,
+                max_value=1500000,
+                value=180000
+            )
 
-        st.markdown("---")
-        st.caption(
-            "Pastikan seluruh informasi telah diisi "
-            "dengan benar sebelum melakukan prediksi."
-        )
+            capital_gain = st.number_input(
+                "Capital Gain",
+                min_value=0,
+                max_value=100000,
+                value=0
+            )
 
-    st.markdown("---")
+            capital_loss = st.number_input(
+                "Capital Loss",
+                min_value=0,
+                max_value=10000,
+                value=0
+            )
+
+            st.markdown("---")
+
+            st.caption(
+                "Pastikan seluruh data sudah sesuai sebelum melakukan prediksi."
+            )
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     submitted = st.form_submit_button(
-        "🔍 PREDIKSI PENDAPATAN",
+        "✦  GENERATE INCOME PREDICTION",
         use_container_width=True
     )
 
 
-# ================= PREDICTION RESULT =================
+# ==================================================
+# PREDICTION
+# ==================================================
+
 if submitted:
 
     input_data = pd.DataFrame([{
@@ -378,6 +603,7 @@ if submitted:
     }])
 
     hasil_pred = int(model.predict(input_data)[0])
+
     probabilities = model.predict_proba(input_data)[0]
 
     prob_low = float(probabilities[0]) * 100
@@ -388,55 +614,65 @@ if submitted:
     kategori = ">50K" if hasil_pred == 1 else "<=50K"
 
     st.markdown("---")
-    st.markdown(
-        '<div class="section-title">Hasil Prediksi</div>',
-        unsafe_allow_html=True
-    )
 
-    st.markdown(f"""
-    <div class="result-card">
-        <p>HASIL KLASIFIKASI RANDOM FOREST</p>
-        <h2>💼 {kategori}</h2>
-        <p>Probabilitas kategori hasil prediksi</p>
-        <h2>{confidence:.2f}%</h2>
+    st.markdown("""
+    <div class="section-heading">Prediction Result</div>
+    <div class="section-subtitle">
+        Hasil analisis berdasarkan model Random Forest.
     </div>
     """, unsafe_allow_html=True)
 
-    result1, result2 = st.columns(2)
+    st.markdown(f"""
+    <div class="result-card">
+        <div class="result-label">✦ AI PREDICTION COMPLETE</div>
+        <div class="result-category">{kategori}</div>
+        <div class="result-caption">PREDICTED INCOME CATEGORY</div>
+        <br>
+        <div class="result-confidence">{confidence:.2f}%</div>
+        <div class="result-caption">Probabilitas kategori hasil prediksi</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with result1:
+    res1, res2 = st.columns(2, gap="medium")
+
+    with res1:
         st.markdown(f"""
-        <div class="metric">
-            <div class="metric-label">Pendapatan ≤50K</div>
-            <div class="metric-value">{prob_low:.2f}%</div>
+        <div class="prob-card">
+            <div class="prob-label">INCOME ≤50K</div>
+            <div class="prob-value">{prob_low:.2f}%</div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width:{prob_low:.2f}%"></div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.progress(prob_low / 100)
-
-    with result2:
+    with res2:
         st.markdown(f"""
-        <div class="metric">
-            <div class="metric-label">Pendapatan >50K</div>
-            <div class="metric-value">{prob_high:.2f}%</div>
+        <div class="prob-card">
+            <div class="prob-label">INCOME >50K</div>
+            <div class="prob-value">{prob_high:.2f}%</div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width:{prob_high:.2f}%"></div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-
-        st.progress(prob_high / 100)
 
     with st.expander("Lihat Data yang Dianalisis"):
         st.dataframe(input_data, use_container_width=True)
 
-    st.caption(
-        "Catatan: Hasil merupakan estimasi model berdasarkan "
-        "pola dalam dataset, bukan pendapatan aktual individu."
+    st.info(
+        "Catatan: Hasil merupakan estimasi berdasarkan pola dalam dataset, "
+        "bukan pendapatan aktual individu."
     )
 
 
-# ================= FOOTER =================
+# ==================================================
+# FOOTER
+# ==================================================
+
 st.markdown("""
 <div class="footer">
-    <b>INCOME PREDICTION SYSTEM</b><br>
-    Machine Learning Project | Random Forest Classifier
+    <b>INCOME AI</b> &nbsp; | &nbsp; SMART PREDICTION SYSTEM<br>
+    Machine Learning Project • Random Forest Classifier • Adult Income Dataset
 </div>
 """, unsafe_allow_html=True)
